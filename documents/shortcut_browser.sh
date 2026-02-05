@@ -47,11 +47,11 @@ OTHER="$SOURCE_DIR/binaries/UtildHF"
 if [ -e /lib/ld-linux-armhf.so.3 ] && [ -e /var/local/kmc/UtildHF ]; then
     echo "In HF Mode"
     chmod +x /var/local/kmc/UtildHF
-    /var/local/kmc/UtildHF
+    #/var/local/kmc/UtildHF
 elif [ -e /var/local/kmc/UtildSF ]; then
     echo "In SF Mode"
     chmod +x /var/local/kmc/UtildSF
-    /var/local/kmc/UtildSF
+    #/var/local/kmc/UtildSF
 fi
 
 ## Check if we have chromium installed, if not then exit!
