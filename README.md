@@ -10,8 +10,10 @@ Scriptlet that can turn your kindle into a kiosk or setup a shortcut to open a w
 
 1. Download the [Latest Zip](https://github.com/mitchellurgero/kindle-shortcut-browser/releases)
 2. Extract the contents to the root of your kindle
-3. Modify `https://example.com` in `<YourKindle>\fullscreenbrowser\index.html` OR change the `FULLSCREEN_SITE` variable in `<YourKindle\documents\shortcut_browser.sh` to your site of choice.
+3. Modify `https://example.com` in `<YourKindle>\documents\shortcutbrowser\index.html` OR change the `FULLSCREEN_SITE` variable in `<YourKindle\documents\shortcut_browser.sh` to your site of choice.
 4. Run the app!
+
+**NOW WITH KEYBOARD SUPPORT** *Only tested on Kindle 10th Gen (KT4) on 5.18.1 Firmware.*
 
 You can also change the `GO_FULLSCREEN` to `false` to keep the UI in the background. 
 

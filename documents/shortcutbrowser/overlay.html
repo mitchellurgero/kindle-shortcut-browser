@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shortcut Browser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #f0f0f0;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: #333;
+            gap: 6px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 4px;
+        }
+
+        .nav-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 4px;
+            background: #555;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-btn:hover {
+            background: #666;
+        }
+
+        .nav-btn:active {
+            background: #444;
+        }
+
+        .url-bar {
+            flex: 1;
+            display: flex;
+            gap: 6px;
+        }
+
+        .url-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            background: #fff;
+        }
+
+        .url-input:focus {
+            outline: 2px solid #4a90d9;
+        }
+
+        .go-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background: #4a90d9;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .go-btn:hover {
+            background: #5aa0e9;
+        }
+
+        .exit-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 4px;
+            background: #c44;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .exit-btn:hover {
+            background: #d55;
+        }
+
+        .exit-btn:active {
+            background: #b33;
+        }
+
+        .browser-frame {
+            flex: 1;
+            border: none;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <div class="nav-buttons">
+            <button class="nav-btn" id="backBtn" title="Back">&lt;</button>
+            <button class="nav-btn" id="forwardBtn" title="Forward">&gt;</button>
+            <button class="nav-btn" id="reloadBtn" title="Reload">&#8634;</button>
+            <button class="nav-btn" id="stopBtn" title="Stop">X</button>
+        </div>
+        <div class="url-bar">
+            <input type="text" class="url-input" id="urlInput" placeholder="Enter URL..." value="http://example.com">
+            <button class="go-btn" id="goBtn">Go</button>
+        </div>
+        <button class="exit-btn" id="exitBtn" title="Exit">Exit</button>
+    </div>
+    <iframe id="browserFrame" class="browser-frame" src="http://example.com"></iframe>
+
+    <script>
+        const urlInput = document.getElementById('urlInput');
+        const goBtn = document.getElementById('goBtn');
+        const backBtn = document.getElementById('backBtn');
+        const forwardBtn = document.getElementById('forwardBtn');
+        const reloadBtn = document.getElementById('reloadBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const exitBtn = document.getElementById('exitBtn');
+        const browserFrame = document.getElementById('browserFrame');
+
+        // History management
+        let history = ['http://example.com'];
+        let historyIndex = 0;
+
+        function normalizeUrl(url) {
+            url = url.trim();
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'http://' + url;
+            }
+            return url;
+        }
+
+        function navigate(url) {
+            url = normalizeUrl(url);
+
+            // Remove any forward history when navigating to new page
+            if (historyIndex < history.length - 1) {
+                history = history.slice(0, historyIndex + 1);
+            }
+
+            history.push(url);
+            historyIndex = history.length - 1;
+
+            browserFrame.src = url;
+            urlInput.value = url;
+        }
+
+        function goToUrl() {
+            const url = urlInput.value;
+            if (url) {
+                navigate(url);
+            }
+        }
+
+        // Go button click
+        goBtn.addEventListener('click', goToUrl);
+
+        // Enter key in URL input
+        urlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                goToUrl();
+            }
+        });
+
+        // Back button
+        backBtn.addEventListener('click', () => {
+            if (historyIndex > 0) {
+                historyIndex--;
+                const url = history[historyIndex];
+                browserFrame.src = url;
+                urlInput.value = url;
+            }
+        });
+
+        // Forward button
+        forwardBtn.addEventListener('click', () => {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                const url = history[historyIndex];
+                browserFrame.src = url;
+                urlInput.value = url;
+            }
+        });
+
+        // Reload button
+        reloadBtn.addEventListener('click', () => {
+            browserFrame.src = browserFrame.src;
+        });
+
+        // Stop button
+        stopBtn.addEventListener('click', () => {
+            browserFrame.contentWindow.stop();
+        });
+
+        // Select all text when focusing URL input
+        urlInput.addEventListener('focus', () => {
+            urlInput.select();
+        });
+
+        // Exit button - close the browser window
+        exitBtn.addEventListener('click', () => {
+            window.close();
+        });
+
+        // Update URL bar when iframe navigates
+        browserFrame.addEventListener('load', () => {
+            try {
+                const currentUrl = browserFrame.contentWindow.location.href;
+                if (currentUrl && currentUrl !== 'about:blank') {
+                    urlInput.value = currentUrl;
+
+                    // Update history if this is a new navigation within the iframe
+                    if (history[historyIndex] !== currentUrl) {
+                        if (historyIndex < history.length - 1) {
+                            history = history.slice(0, historyIndex + 1);
+                        }
+                        history.push(currentUrl);
+                        historyIndex = history.length - 1;
+                    }
+                }
+            } catch (e) {
+                // Cross-origin restriction - can't access iframe URL
+                // URL bar will keep the last known URL
+            }
+        });
+    </script>
+</body>
+</html>

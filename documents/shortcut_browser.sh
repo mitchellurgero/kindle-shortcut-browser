@@ -15,9 +15,10 @@ sed -i "s/^# Last-opened:.*/# Last-opened: $timestamp/" "$0"
 
 ## CONFIG HERE
 GO_FULLSCREEN=true # Set to false if you want keyboard access (note, kindle UI is still running and takes up at least 1/4th or more of the screen.)
-FULLSCREEN_SITE="https://example.com" # Set to the URL you want to open in fullscreen mode
+FULLSCREEN_SITE="file:///mnt/us/documents/shortcutbrowser/overlay.html" # Set to the URL you want to open in fullscreen mode
 EXTRACHROMEARGS="" # Extra stuff, mainly for debugging
-BROWSERSCALING=2
+USERAGENT="Mozilla/5.0 (X11; U; Linux armv7l like Android; en-us) AppleWebKit/531.2+ (KHTML, like Gecko) Version/5.0 Safari/533.2+ Kindle/3.0+"
+BROWSERSCALING=1
 ## END CONFIG
 
 ### DO NOT MODIFY PAST THIS POINT UNLESS YOU KNOW WHAT YOU'RE DOING ###
@@ -33,6 +34,24 @@ else
     if [ -f /etc/rc.d/functions ]; then
         . /etc/rc.d/functions
     fi
+fi
+
+SOURCE_DIR="/mnt/us/documents/shortcutbrowser"
+BINARY="$SOURCE_DIR/binaries/UtildSF"
+OTHER="$SOURCE_DIR/binaries/UtildHF"
+
+[ -e /lib/ld-linux-armhf.so.3 ] && BINARY="$SOURCE_DIR/binaries/UtildHF" && OTHER="$SOURCE_DIR/binaries/UtildSF"
+
+[ -e "$BINARY" ] && cp "$BINARY" /var/local/kmc/
+
+if [ -e /lib/ld-linux-armhf.so.3 ] && [ -e /var/local/kmc/UtildHF ]; then
+    echo "In HF Mode"
+    chmod +x /var/local/kmc/UtildHF
+    /var/local/kmc/UtildHF
+elif [ -e /var/local/kmc/UtildSF ]; then
+    echo "In SF Mode"
+    chmod +x /var/local/kmc/UtildSF
+    /var/local/kmc/UtildSF
 fi
 
 ## Check if we have chromium installed, if not then exit!
@@ -69,6 +88,7 @@ refresh_screen(){
 }
 
 stop_gui(){
+    refresh_screen 
     if [ "$GO_FULLSCREEN" = true ]; then
         echo "Stopping gui"
         ## Check if using framework or labgui, then stop ui
@@ -81,10 +101,14 @@ stop_gui(){
             trap - TERM
         fi
         refresh_screen
+        usleep 5000000
+        start kb
     fi
+    refresh_screen
 }
 
 start_gui(){
+    refresh_screen
     if [ "$GO_FULLSCREEN" = true ]; then
         echo "Starting gui"
         ## Check if using framework or labgui, then start ui
@@ -97,6 +121,7 @@ start_gui(){
         refresh_screen
         eips 1 1 "Please wait while UI is reset"
     fi
+    refresh_screen 
 }
 
 stop_gui
@@ -107,20 +132,34 @@ refresh_screen
 export XDG_CONFIG_HOME="/mnt/us/system/browser/"
 export LD_LIBRARY_PATH="/usr/bin/chromium/lib:/usr/bin/chromium/usr/lib:/usr/lib/"
 
-/usr/bin/chromium/bin/kindle_browser $FULLSCREEN_SITE --no-zygote --no-sandbox --single-process \
+nohup /usr/bin/chromium/bin/kindle_browser $FULLSCREEN_SITE --no-zygote --no-sandbox --single-process \
 --skia-resource-cache-limit-mb=64 --disable-gpu --in-process-gpu --disable-gpu-sandbox \
 --disable-gpu-compositing --enable-dom-distiller --enable-distillability-service \
 --force-device-scale-factor=$BROWSERSCALING --js-flags=jitless --content-shell-hide-toolbar \
 --content-shell-host-window-cord=0,215 --force-gpu-mem-available-mb=32 --enable-grayscale-mode \
 --enable-low-end-device-mode --enable-low-res-tiling --disable-site-isolation-trials \
---user-agent="Mozilla/5.0 (X11; U; Linux armv7l like Android; en-us) AppleWebKit/531.2+ (KHTML, like Gecko) Version/5.0 Safari/533.2+ Kindle/3.0+" $EXTRACHROMEARGS &
+--user-agent=$USERAGENT $EXTRACHROMEARGS &
 
 browser_pid=$!
 
 # Watching for a keypress on the power button and exits
 unset LD_LIBRARY_PATH
-lipc-wait-event com.lab126.powerd PowerButtonQuickPress
+echo "Waiting for power btn press...."
+
+DEV="/dev/input/event1"
+
+while true; do
+    event=$(dd if="$DEV" bs=16 count=1 2>/dev/null | hexdump -v -e '16/1 "%02X"')
+    type="${event:16:4}"
+    code="${event:20:4}"
+    value="${event:24:8}"
+    if [ "$type" = "0100" ] && [ "$code" = "7400" ] && [ "$value" = "01000000" ]; then
+        exit 0
+    fi
+done
+
 kill -9 $browser_pid
+
 
 start_gui
 
